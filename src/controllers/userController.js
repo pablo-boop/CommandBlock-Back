@@ -1,10 +1,12 @@
 const pool = require("../config/dbConfig")
 const bcrypt = require('bcrypt')
 const formatarData = require("../models/formatarData")
+const calcularIdade = require("../models/calcularIdade")
 
 async function createUser(req, res) {
     const { name, birthdate, email, cpf, course, password, type } = req.body;
-    const query = 'INSERT INTO users (name, birthdate, email, cpf, course, password, type) VALUES ($1, $2, $3, $4, $5, $6, $7)';
+    const age = calcularIdade(birthdate)
+    const query = `INSERT INTO users (name, birthdate, age, email, cpf, course, password, type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
 
     try {
         const emailAlreadyExist = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -23,7 +25,7 @@ async function createUser(req, res) {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            await pool.query(query, [name, birthdate, email, cpf, course, hashedPassword, type]);
+            await pool.query(query, [name, birthdate, age, email, cpf, course, hashedPassword, type]);
             res.status(201).send({
                 message: 'Usuario cadastrado com sucesso!',
             })
@@ -38,7 +40,7 @@ async function createUser(req, res) {
 
 async function getAllUsers(req, res) {
     try {
-        const { cpf } = req.body;
+        const { cpf } = req.params;
         let result;
 
         if (cpf) {
@@ -57,4 +59,64 @@ async function getAllUsers(req, res) {
         res.status(500).send('Erro ao obter usuários!');
     }
 }
-module.exports = { createUser, getAllUsers }
+
+async function getUserById(req, res) {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        
+        if (result.rowCount > 0) {
+            res.status(200).send({
+                message: 'Usuário obtido com sucesso!',
+                user: result.rows[0]
+            });
+        } else {
+            res.status(404).send({
+                message: 'Usuário não encontrado!'
+                });
+        }
+    } catch (error) {
+        console.error('Erro ao obter usuário:', error);
+        res.status(500).send('Erro ao obter usuário!');
+    }
+}
+
+async function editUser(req, res) {
+    const { id } = req.params;
+    const { name, birthdate, email, cpf, course, password, type } = req.body;
+    const age = calcularIdade(birthdate);
+
+    try {
+        const query = `UPDATE users SET name=$1, birthdate=$2, age=$3 email=$4, cpf=$5, course=$6, password=$7, type=$8 WHERE id=$9`;
+        const result = await pool.query(query, [name, birthdate, age, email, cpf, course, password, type, id]);
+        
+        if (result.rowCount > 0) {
+            res.send('Usuário atualizado com sucesso');
+        } else {
+            res.status(404).send('Usuário não encontrado');
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar usuário:', error);
+        res.status(500).send('Erro ao atualizar usuário!');
+    }
+}
+
+async function deleteUser(req, res) {
+    const { id } = req.params;
+    const query = 'DELETE FROM users WHERE id=$1';
+    
+    try {
+        const result = await pool.query(query, [id]);
+        
+        if (result.rowCount > 0) {
+            res.send('Usuário deletado com sucesso');
+        } else {
+            res.status(404).send('Usuário não encontrado');
+        }
+    } catch (error) {
+        console.error('Erro ao deletar usuário:', error);
+        res.status(500).send('Erro ao deletar usuário!');
+    }
+}
+
+module.exports = { createUser, getAllUsers, getUserById, editUser, deleteUser }
