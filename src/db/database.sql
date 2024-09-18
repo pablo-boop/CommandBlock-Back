@@ -28,18 +28,22 @@ CREATE TABLE vacancies (
     creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expiration_time DATE NOT NULL,
     status VARCHAR(100) NOT NULL,
-    students_id INT [],
-    company_id INT NOT NULL,
-    FOREIGN KEY company_id REFERENCES companies(id)
+    students JSONB DEFAULT '[]'
 );
-
-CREATE TABLE status (
+CREATE TABLE candidacy (
     id SERIAL PRIMARY KEY,
-    iniciado BOOLEAN,
-    alunoSelecionado BOOLEAN,
-    avaliaçãoCurriculo BOOLEAN,
-    gestãoDocumentos BOOLEAN,
-    finalizado BOOLEAN,
-    data_id DATE NOT NULL,
-    FOREIGN KEY data_id REFERENCES vacancies(id)
+    id_student INT NOT NULL,
+    id_vacancy INT NOT NULL,
+    id_company INT NOT NULL,
+    iniciated BOOLEAN,
+    curriculumAvaliation BOOLEAN,
+    documentsManagement BOOLEAN,
+    done BOOLEAN,
+    hired BOOLEAN,
+    description TEXT,
+    cretion_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modification_data DATE,
+    FOREIGN KEY (id_student) REFERENCES users(id),
+    FOREIGN KEY (id_vacancy) REFERENCES vacancies(id),
+    FOREIGN KEY (id_company) REFERENCES companies(id)
 );
