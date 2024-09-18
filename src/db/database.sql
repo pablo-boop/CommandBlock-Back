@@ -1,11 +1,12 @@
-CREATE DATABASE commandBlock;
+CREATE DATABASE commandblock;
 
-\c commandBlock;
+\c commandblock;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     birthdate DATE NOT NULL,
+    age INT,
     email VARCHAR(100) NOT NULL UNIQUE,
     cpf VARCHAR(200) NOT NULL UNIQUE,
     course VARCHAR(150) NOT NULL,
