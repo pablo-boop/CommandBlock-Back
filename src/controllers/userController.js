@@ -83,12 +83,19 @@ async function getUserById(req, res) {
 async function editUser(req, res) {
     const { id } = req.params;
     const { name, birthdate, email, cpf, course, password, type } = req.body;
-    const formattedDate = validarEFormatarData(birthdate)
-    const age = calcularIdade(formattedDate);
+    // console.log(birthdate)
 
     try {
-        const query = `UPDATE users SET name=$1, birthdate=$2, age=$3 email=$4, cpf=$5, course=$6, password=$7, type=$8 WHERE id=$9`;
-        const result = await pool.query(query, [name, birthdate, age, email, cpf, course, password, type, id]);
+        const birthDateObj = validarEFormatarData(birthdate);
+
+        if (!birthDateObj || isNaN(birthDateObj.getTime())) {
+            return res.status(400).send('Data de nascimento inválida.');
+        }
+
+        const age = calcularIdade(birthDateObj);
+
+        const query = `UPDATE users SET name=$1, birthdate=$2, age=$3, email=$4, cpf=$5, course=$6, password=$7, type=$8 WHERE id=$9`;
+        const result = await pool.query(query, [name, birthDateObj, age, email, cpf, course, password, type, id]);
         
         if (result.rowCount > 0) {
             res.send('Usuário atualizado com sucesso');
@@ -97,7 +104,7 @@ async function editUser(req, res) {
         }
     } catch (error) {
         console.error('Erro ao atualizar usuário:', error);
-        res.status(500).send('Erro ao atualizar usuário!');
+        res.status(400).send(error.message);
     }
 }
 
