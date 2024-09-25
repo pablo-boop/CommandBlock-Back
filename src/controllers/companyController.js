@@ -7,14 +7,14 @@ async function createCompany(req, res) {
 
     try {
         if (name == "" || cnpj == "" || email == "" || phone == "") {
-            return res.stat(400).send({message: "Preencha todos os campos necessários!"})
+            return res.status(400).send({message: "Preencha todos os campos necessários!"})
         }
         const cnpjFormated = formatarCNPJ(cnpj);
         const phoneFormated = formatarTelefone(phone);
         const query = `INSERT INTO companies (name, cnpj, email, phone) VALUES ($1, $2, $3, $4)`;
 
-        const cnpjAlreadyExist = await pool.query('SELECT * FROM users WHERE cnpj = $1', [cnpj]);
-        const emailAlreadyExist = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const cnpjAlreadyExist = await pool.query('SELECT * FROM companies WHERE cnpj = $1', [cnpj]);
+        const emailAlreadyExist = await pool.query('SELECT * FROM companies WHERE email = $1', [email]);
 
         if (emailAlreadyExist.rowCount > 0) {
             return res.status(400).send({ message: 'Email já cadastrado!' });
@@ -29,6 +29,7 @@ async function createCompany(req, res) {
         return res.status(400).send({ message: error.message });
     }
 }
+
 
 async function getAllCompanies(req, res) {
     try {
