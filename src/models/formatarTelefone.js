@@ -1,10 +1,9 @@
 function formatarTelefone(phoneNumber) {
-  phoneNumber = phoneNumber.replace(/\D/g, '');
-
-  let formattedPhoneNumber = '';
-  formattedPhoneNumber = `${phoneNumber.slice(0, 2)} (${phoneNumber.slice(2, 5)}) ${phoneNumber.slice(5, 8)}-${phoneNumber.slice(8, 12)}`;
-
-  return formattedPhoneNumber;
+  const digitsOnly = phoneNumber.replace(/\D/g, '');
+  
+  const formattedPhone = digitsOnly.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    
+  return formattedPhone;
 }
 
 module.exports = formatarTelefone;
