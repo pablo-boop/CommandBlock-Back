@@ -79,11 +79,10 @@ async function editCompany(req, res) {
     const { name, cnpj, email, phone } = req.body;
 
     const cnpjFormated = formatarCNPJ(cnpj);
-    const phoneFormated = formatarTelefone(phone);
 
     try {
         const query = `UPDATE companies SET name=$1, cnpj=$2, email=$3, phone=$4 WHERE id=$5`;
-        const result = await pool.query(query, [name, cnpjFormated, email, phoneFormated, id]);
+        const result = await pool.query(query, [name, cnpjFormated, email, phone, id]);
         
         if (result.rowCount > 0) {
             res.send('Empressa atualizada com sucesso');
