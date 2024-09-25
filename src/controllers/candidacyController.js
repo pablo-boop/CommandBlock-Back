@@ -84,9 +84,9 @@ async function deleteCandidacy(req, res) {
         const result = await pool.query(query, [id]);
 
         if (result.rowCount > 0) {
-            res.send({ message: 'Candidatura deletada com sucesso'});
+            res.send({ message: 'Candidatura deletada com sucesso' });
         } else {
-            res.status(404).send({ message: 'Candidatura não encontrada'});
+            res.status(404).send({ message: 'Candidatura não encontrada' });
         }
     } catch (error) {
         console.error('Erro ao deletar candidatura:', error);
@@ -94,4 +94,51 @@ async function deleteCandidacy(req, res) {
     }
 }
 
-module.exports = { createCandidacy, getAllCandidacies, getCandidacyById, editCandidacy, deleteCandidacy }
+async function manageCandidates(req, res) {
+    try {
+        const { id_vacancy, id_student } = req.params;
+
+        // Obter candidaturas duplicadas
+        const duplicateCandidatures = await pool.query(`
+        WITH ranked_candidates AS (
+          SELECT c.id_student AS candidate_id
+          FROM candidacies c
+          WHERE c.id_vacancy = $1
+          GROUP BY c.id_student
+          ORDER BY COUNT(*) DESC
+        )
+        SELECT candidate_id
+        FROM ranked_candidates
+        WHERE rank > 1
+      `, [id_vacancy]);
+
+        if (duplicateCandidatures.rows.length === 0) {
+            return res.status(200).json({ success: true, message: 'Não há candidaturas duplicadas para esta vaga.' });
+        }
+
+        // Atualizar candidaturas
+        const updateQuery = `
+        UPDATE candidacies
+        SET id_student = $1
+        FROM (
+          SELECT id, id_student
+          FROM candidacies
+          WHERE id_vacancy = $2
+          AND id_student IN ($3, $4)
+        ) temp
+        WHERE candidacies.id = temp.id
+      `;
+        const result = await pool.query(updateQuery, [id_student, id_vacancy, duplicateCandidatures.rows[0].candidate_id, duplicateCandidatures.rows[1].candidate_id]);
+
+        if (result.rowCount === 0) {
+            return res.status(500).json({ success: false, message: 'Não foi possível atualizar as candidaturas.' });
+        }
+
+        return res.status(200).json({ success: true, message: 'Candidaturas atualizadas com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao gerenciar candidaturas:', error);
+        return res.status(500).json({ success: false, message: 'Erro interno ao processar sua solicitação.' });
+    }
+}
+
+module.exports = { createCandidacy, getAllCandidacies, getCandidacyById, editCandidacy, deleteCandidacy, manageCandidates }
