@@ -31,7 +31,7 @@ CREATE TABLE vacancies (
     status VARCHAR(100) NOT NULL,
     students JSONB DEFAULT '[]'
 );
-CREATE TABLE candidacy (
+CREATE TABLE candidacies (
     id SERIAL PRIMARY KEY,
     id_student INT NOT NULL,
     id_vacancy INT NOT NULL,
