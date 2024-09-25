@@ -29,6 +29,7 @@ CREATE TABLE vacancies (
     creation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expiration_time DATE NOT NULL,
     status VARCHAR(100) NOT NULL,
+    type VARCHAR(150) NOT NULL,
     students JSONB DEFAULT '[]'
 );
 CREATE TABLE candidacies (

@@ -1,13 +1,14 @@
 function calcularIdade(dataNascimento) {
     const hoje = new Date();
-    const dataNascimentoDate = new Date(dataNascimento);
-    let idade = hoje.getFullYear() - dataNascimentoDate.getFullYear();
+    let idade = hoje.getFullYear() - dataNascimento.getFullYear();
     const mesAtual = hoje.getMonth();
-    const mesNascimento = dataNascimentoDate.getMonth();
-    if (mesNascimento > mesAtual || (mesNascimento === mesAtual && hoje.getDate() < dataNascimentoDate.getDate())) {
+    const mesNascimento = dataNascimento.getMonth();
+    if (mesNascimento > mesAtual || (mesNascimento === mesAtual && hoje.getDate() < dataNascimento.getDate())) {
         idade--;
     }
     return idade;
+    
 }
 
 module.exports = calcularIdade;
+

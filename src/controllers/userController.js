@@ -1,40 +1,39 @@
 const pool = require("../config/dbConfig")
 const bcrypt = require('bcrypt')
-const formatarData = require("../models/formatarData")
-const calcularIdade = require("../models/calcularIdade")
+const validarEFormatarData = require('../models/formatarData');
+const calcularIdade = require('../models/calcularIdade');
 
 async function createUser(req, res) {
     const { name, birthdate, email, cpf, course, password, type } = req.body;
-    const age = calcularIdade(birthdate)
-    const query = `INSERT INTO users (name, birthdate, age, email, cpf, course, password, type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
 
     try {
+        const formattedDate = validarEFormatarData(birthdate);
+        const birthDateObj = new Date(formattedDate);
+        const idade = calcularIdade(birthDateObj);
+
+        if (isNaN(idade) || idade < 0) {
+            return res.status(400).send({ message: 'Idade inválida!' });
+        }
+
+        const query = `INSERT INTO users (name, birthdate, age, email, cpf, course, password, type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
+
         const emailAlreadyExist = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         const cpfAlreadyExist = await pool.query('SELECT * FROM users WHERE cpf = $1', [cpf]);
 
         if (emailAlreadyExist.rowCount > 0) {
-            res.status(400).send({
-                message: 'Email já cadastrado!'
-            });
-        }
-        else if (cpfAlreadyExist.rowCount > 0) {
-            res.status(400).send({
-                message: 'CPF já cadastrado!'
-            });
+            return res.status(400).send({ message: 'Email já cadastrado!' });
+        } else if (cpfAlreadyExist.rowCount > 0) {
+            return res.status(400).send({ message: 'CPF já cadastrado!' });
         } else {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            await pool.query(query, [name, birthdate, age, email, cpf, course, hashedPassword, type]);
-            res.status(201).send({
-                message: 'Usuario cadastrado com sucesso!',
-            })
+            await pool.query(query, [name, formattedDate, idade, email, cpf, course, hashedPassword, type]);
+            return res.status(201).send({ message: 'Usuário cadastrado com sucesso!' });
         }
     } catch (error) {
-        console.error('Erro ao criar usuário:', error);
-        res.status(400).send({
-            message: 'Erro ao criar usuário!'
-        });
+        console.error('Erro ao criar usuário:', error.message);
+        return res.status(400).send({ message: error.message });
     }
 }
 
@@ -84,7 +83,8 @@ async function getUserById(req, res) {
 async function editUser(req, res) {
     const { id } = req.params;
     const { name, birthdate, email, cpf, course, password, type } = req.body;
-    const age = calcularIdade(birthdate);
+    const formattedDate = validarEFormatarData(birthdate)
+    const age = calcularIdade(formattedDate);
 
     try {
         const query = `UPDATE users SET name=$1, birthdate=$2, age=$3 email=$4, cpf=$5, course=$6, password=$7, type=$8 WHERE id=$9`;
