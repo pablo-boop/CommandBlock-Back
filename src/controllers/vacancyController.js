@@ -74,16 +74,17 @@ async function getVacancyById(req, res) {
 
 async function editVacancy(req, res) {
     const id = req.params.id;
-    const { name, description, creation_time, expiration_time, status, type } = req.body;
+    const { name, description, creation_time, expiration_time, type } = req.body;
 
-    if (!name || !description || !creation_time || !expiration_time || !status || !type) {
+    if (name == "" || description == "" || creation_time == "" || expiration_time == "" || type == "") {
+        console.log(id)
         return res.status(400).send({ message: 'Preencha todos os campos' });
     } else if (creation_time === expiration_time) {
         return res.status(400).send({ message: 'A data de expiração não pode ser a mesma que a data de criação!' });
     } else {
         try {
-            const query = `UPDATE vacancies SET name=$1, description=$2, creation_time=$3, expiration_time=$4, status=$5, type=$6 WHERE id=$7`;
-            const result = await pool.query(query, [name, description, creation_time, expiration_time, status, type, id]);
+            const query = `UPDATE vacancies SET name=$1, description=$2, creation_time=$3, expiration_time=$4, type=$5 WHERE id=$6`;
+            const result = await pool.query(query, [name, description, creation_time, expiration_time, type, id]);
 
             if (result.rowCount > 0) {
                 return res.send('Vaga atualizada com sucesso');

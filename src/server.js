@@ -7,7 +7,7 @@ const companyRoutes = require("./routes/company.routes")
 const candidacyRoutes = require("./routes/candidacy.routes")
 
 const app = express();
-const port = process.env.PORT || 7000;
+const port = process.env.PORT;
 const cors = require('cors');
 
 app.use(express.json());
