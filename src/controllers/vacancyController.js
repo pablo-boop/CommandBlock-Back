@@ -1,31 +1,32 @@
 const pool = require("../config/dbConfig")
 
 async function createVacancy(req, res) {
-    const { name, description, creation_time, expiration_time, status, type, students } = req.body;
-    const query = `INSERT INTO vacancies (name, description, creation_time, expiration_time, status, type, students) VALUES ($1, $2, $3, $4, $5, $6, $7)`;
-
-    if (name == "" || description == "" || creation_time == null || expiration_time == null || status == "" || type == "") {
-        res.status(400).send({
-            message: 'Preencha todos os campos'
-        });
-    } else if (creation_time == expiration_time) {
-        res.status(400).send({
-            message: 'A data de expiração não pode ser a mesma que a data de criação!'
-        });
-    } else {
-        try {
-            await pool.query(query, [name, description, creation_time, expiration_time, status, type, students]);
-            res.status(201).send({
-                message: 'Vaga cadastrada com sucesso!',
-            })
-        } catch (error) {
-            console.error('Erro ao criar vaga:', error);
-            res.status(400).send({
-                message: 'Erro ao criar vaga!'
+    
+    try {
+        const { name, description, creation_time, expiration_time, type } = req.body;
+        const query = `INSERT INTO vacancies (name, description, creation_time, expiration_time, type) VALUES ($1, $2, $3, $4, $5)`;
+        
+        if (name === "" || description === "" || creation_time == null || expiration_time == null || type === "") {
+            return res.status(400).send({
+                message: 'Preencha todos os campos'
+            });
+        } 
+        
+        if (creation_time === expiration_time) {
+            return res.status(400).send({
+                message: 'A data de expiração não pode ser a mesma que a data de criação!'
             });
         }
+        await pool.query(query, [name, description, creation_time, expiration_time, type]);
+        res.status(201).send({
+            message: 'Vaga cadastrada com sucesso!',
+        });
+    } catch (error) {
+        console.error('Erro ao criar vaga:', error);
+        res.status(400).send({
+            message: 'Erro ao criar vaga!'
+        });
     }
-
 }
 
 async function getAllVacancies(req, res) {
@@ -116,37 +117,4 @@ async function deleteVacancy(req, res) {
     }
 }
 
-async function addStudentVacancy(req, res) {
-    const vacancyId = req.params.id;
-    const { studentId } = req.body;
-
-    if (!studentId) {
-        return res.status(400).send({ message: 'ID do estudante é necessário' });
-    }
-
-    try {
-        const vacancyResult = await pool.query('SELECT students FROM vacancies WHERE id=$1', [vacancyId]);
-        const vacancy = vacancyResult.rows[0];
-
-        if (!vacancy) {
-            return res.status(404).send('Vaga não encontrada');
-        }
-
-        const currentStudents = vacancy.students ? vacancy.students : [];
-
-        if (!currentStudents.includes(studentId)) {
-            currentStudents.push(studentId);
-        }
-
-        const updatedStudentsJson = JSON.stringify(currentStudents);
-        await pool.query('UPDATE vacancies SET students=$1 WHERE id=$2', [updatedStudentsJson, vacancyId]);
-
-        return res.send('Estudante adicionado à vaga com sucesso');
-    } catch (error) {
-        console.error('Erro ao adicionar estudante à vaga:', error);
-        return res.status(500).send('Erro ao adicionar estudante à vaga!');
-    }
-}
-
-
-module.exports = { createVacancy, getAllVacancies, getVacancyById, editVacancy, deleteVacancy, addStudentVacancy }
+module.exports = { createVacancy, getAllVacancies, getVacancyById, editVacancy, deleteVacancy }
