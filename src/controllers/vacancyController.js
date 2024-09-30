@@ -87,9 +87,9 @@ async function editVacancy(req, res) {
             const result = await pool.query(query, [name, description, creation_time, expiration_time, type, id]);
 
             if (result.rowCount > 0) {
-                return res.send('Vaga atualizada com sucesso');
+                return res.send({message: 'Vaga atualizada com sucesso'});
             } else {
-                return res.status(404).send('Vaga não encontrada');
+                return res.status(404).send({ message: 'Vaga não encontrada'});
             }
         } catch (error) {
             console.error('Erro ao atualizar vaga:', error);
@@ -108,9 +108,9 @@ async function deleteVacancy(req, res) {
         const result = await pool.query(query, [id]);
 
         if (result.rowCount > 0) {
-            res.send('Vaga deletada com sucesso');
+            res.send({message: 'Vaga deletada com sucesso'});
         } else {
-            res.status(404).send('Vaga não encontrada');
+            res.status(404).send({message: 'Vaga não encontrada'});
         }
     } catch (error) {
         console.error('Erro ao deletar vaga:', error);

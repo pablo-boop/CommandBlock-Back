@@ -85,9 +85,9 @@ async function editCompany(req, res) {
         const result = await pool.query(query, [name, cnpjFormated, email, phone, id]);
         
         if (result.rowCount > 0) {
-            res.send('Empressa atualizada com sucesso');
+            res.send({message: 'Empressa atualizada com sucesso'});
         } else {
-            res.status(404).send('Empressa não encontrada');
+            res.status(404).send({message: 'Empressa não encontrada'});
         }
     } catch (error) {
         console.error('Erro ao atualizar Empressa:', error);
@@ -103,9 +103,9 @@ async function deleteCompany(req, res) {
         const result = await pool.query(query, [id]);
         
         if (result.rowCount > 0) {
-            res.send('Empressa deletada com sucesso');
+            res.send({message: 'Empressa deletada com sucesso'});
         } else {
-            res.status(404).send('Empressa não encontrada');
+            res.status(404).send({message: 'Empressa não encontrada'});
         }
     } catch (error) {
         console.error('Erro ao deletar empressa:', error);
