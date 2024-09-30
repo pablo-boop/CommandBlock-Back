@@ -8,6 +8,8 @@ async function createCandidacy(req, res) {
         if (id_student == null || id_vacancy == null || id_company == null) {
             return res.status(400).send({ message: "Preencha todos os campos necessários!" })
         } else {
+            console.log(id_student, id_vacancy, id_company);
+            
             const query = `INSERT INTO candidacies (id_student, id_vacancy, id_company, iniciated, curriculumAvaliation, documentsManagement, done, hired, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
 
             await pool.query(query, [id_student, id_vacancy, id_company, true, false, false, false, false, description]);
