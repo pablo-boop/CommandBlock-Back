@@ -61,12 +61,13 @@ async function getCandidacyById(req, res) {
 
 async function editCandidacy(req, res) {
     const { id, id_student, id_vacancy, id_company } = req.params;
-    const { iniciated, curriculumAvaliation, documentsManagement, done, hired, description, modification_data } = req.body;
+    const { iniciated, curriculumAvaliation, documentsManagement, done, hired, description } = req.body;
 
     try {
+        const data = new Date();
         const query = `UPDATE candidacies SET id_student=$1, id_vacancy=$2, id_company=$3, iniciated=$4, curriculumAvaliation=$5, documentsManagement=$6, done=$7, hired=$8, description=$9, modification_data=$10 WHERE id=$11`;
-        const result = await pool.query(query, [id_student, id_vacancy, id_company, iniciated, curriculumAvaliation, documentsManagement, done, hired, description, modification_data, id]);
-
+        const result = await pool.query(query, [id_student, id_vacancy, id_company, iniciated, curriculumAvaliation, documentsManagement, done, hired, description, data, id]);
+        console.log(data)
         if (result.rowCount > 0) {
             res.send({ message: 'Candidatura atualizada com sucesso' });
         } else {
