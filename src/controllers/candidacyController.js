@@ -99,45 +99,31 @@ async function deleteCandidacy(req, res) {
 
 async function manageCandidates(req, res) {
     try {
-        const { id_vacancy, id_student } = req.params;
+        const { id_vacancy } = req.params;
+        const { selectedStudentCpf } = req.body; // CPF do aluno escolhido
 
-        // Obter candidaturas duplicadas
-        const duplicateCandidatures = await pool.query(`
-        WITH ranked_candidates AS (
-          SELECT c.id_student AS candidate_id
-          FROM candidacies c
-          WHERE c.id_vacancy = $1
-          GROUP BY c.id_student
-          ORDER BY COUNT(*) DESC
-        )
-        SELECT candidate_id
-        FROM ranked_candidates
-        WHERE rank > 1
-      `, [id_vacancy]);
+        // Obter candidaturas duplicadas para a vaga específica
+        const duplicateCandidatures = await pool.query(
+            `SELECT u.name AS student_name, u.cpf, v.name AS vacancy_name
+            FROM users u
+            JOIN candidacies c1 ON u.id = c1.id_student
+            JOIN vacancies v ON c1.id_vacancy = v.id
+            JOIN candidacies c2 ON c1.id_vacancy = c2.id_vacancy AND c1.id_student != c2.id_student
+            ORDER BY vacancy_name, student_name;`, [id_vacancy]);
 
         if (duplicateCandidatures.rows.length === 0) {
-            return res.status(200).json({ success: true, message: 'Não há candidaturas duplicadas para esta vaga.' });
+            return res.status(404).json({ success: false, message: 'Nenhuma candidatura duplicada encontrada.' });
         }
 
-        // Atualizar candidaturas
-        const updateQuery = `
-        UPDATE candidacies
-        SET id_student = $1
-        FROM (
-          SELECT id, id_student
-          FROM candidacies
-          WHERE id_vacancy = $2
-          AND id_student IN ($3, $4)
-        ) temp
-        WHERE candidacies.id = temp.id
-      `;
-        const result = await pool.query(updateQuery, [id_student, id_vacancy, duplicateCandidatures.rows[0].candidate_id, duplicateCandidatures.rows[1].candidate_id]);
+        // Excluir todos os alunos que não são o selecionado
+        await pool.query(
+            `DELETE FROM candidacies
+            WHERE id_vacancy = $1
+            AND id_student IN (SELECT id FROM users WHERE cpf != $2);`,
+            [id_vacancy, selectedStudentCpf]);
 
-        if (result.rowCount === 0) {
-            return res.status(500).json({ success: false, message: 'Não foi possível atualizar as candidaturas.' });
-        }
+        res.status(200).json({ success: true, message: 'Candidatos duplicados removidos com sucesso, candidato escolhido permanece.' });
 
-        return res.status(200).json({ success: true, message: 'Candidaturas atualizadas com sucesso.' });
     } catch (error) {
         console.error('Erro ao gerenciar candidaturas:', error);
         return res.status(500).json({ success: false, message: 'Erro interno ao processar sua solicitação.' });
