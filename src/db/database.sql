@@ -11,6 +11,7 @@ CREATE TABLE users (
     cpf VARCHAR(200) NOT NULL UNIQUE,
     course VARCHAR(150) NOT NULL,
     password TEXT NOT NULL,
+    token TEXT NOT NULL DEFAULT '',
     type VARCHAR(100)
 );
 
