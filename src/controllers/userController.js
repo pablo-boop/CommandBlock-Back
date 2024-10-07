@@ -94,7 +94,7 @@ async function createUser(req, res) {
                 const birthDateObj = new Date(formattedDate);
                 const idade = calcularIdade(birthDateObj);
 
-                if (isNaN(idade) || idade < 0) {
+                if (isNaN(idade) || idade <= 0) {
                     return res.status(400).send({ message: 'Idade inválida!' });
                 }
 
