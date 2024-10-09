@@ -87,7 +87,7 @@ async function createUser(req, res) {
 
         try {
             if (validarCPF(cpf) == false) {
-                return res.status(400).send({ message: 'CPF inválido!' });
+                return res.status(400).send({ status: 'error', message: 'CPF inválido!' });
             } else {
                 const formattedCPF = formatarCPF(cpf);
                 const formattedDate = validarEFormatarData(birthdate);
@@ -95,7 +95,7 @@ async function createUser(req, res) {
                 const idade = calcularIdade(birthDateObj);
 
                 if (isNaN(idade) || idade <= 0) {
-                    return res.status(400).send({ message: 'Idade inválida!' });
+                    return res.status(400).send({ status: 'error', message: 'Idade inválida!' });
                 }
 
                 const query = `INSERT INTO users (name, birthdate, age, email, cpf, course, password, type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
@@ -104,20 +104,20 @@ async function createUser(req, res) {
                 const cpfAlreadyExist = await pool.query('SELECT * FROM users WHERE cpf = $1', [cpf]);
 
                 if (emailAlreadyExist.rowCount > 0) {
-                    return res.status(400).send({ message: 'Email já cadastrado!' });
+                    return res.status(400).send({ status: 'error', message: 'Email já cadastrado!' });
                 } else if (cpfAlreadyExist.rowCount > 0) {
-                    return res.status(400).send({ message: 'CPF já cadastrado!' });
+                    return res.status(400).send({ status: 'error', message: 'CPF já cadastrado!' });
                 } else {
                     const salt = await bcrypt.genSalt(10);
                     const hashedPassword = await bcrypt.hash(password, salt);
 
                     await pool.query(query, [name, formattedDate, idade, email, formattedCPF, course, hashedPassword, type]);
-                    return res.status(201).send({ message: 'Usuário cadastrado com sucesso!' });
+                    return res.status(201).send({ status: 'success', message: 'Usuário cadastrado com sucesso!' });
                 }
             }
         } catch (error) {
             console.error('Erro ao criar usuário:', error.message);
-            return res.status(400).send({ message: error.message });
+            return res.status(400).send({ status: 'error', message: error.message });
         }
     }
 
