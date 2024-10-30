@@ -33,23 +33,23 @@ async function createCompany(req, res) {
 
 async function getAllCompanies(req, res) {
     try {
-        const { cnpj } = req.params;
+        const name = req.query.name;
         let result;
 
-        if (cnpj) {
-            result = await pool.query('SELECT * FROM companies WHERE cnpj = $1', [cnpj]);
+        if (name) {
+            result = await pool.query('SELECT * FROM companies WHERE name ILIKE $1', [`%${name}%`]);
         } else {
             result = await pool.query('SELECT * FROM companies');
         }
 
         res.status(200).send({
-            message: 'Empressas obtidas com sucesso!',
+            message: 'Empresas obtidas com sucesso!',
             totalCompanies: result.rowCount,
             companies: result.rows
         });
     } catch (error) {
-        console.error('Erro ao obter empressas:', error);
-        res.status(500).send('Erro ao obter empressas!');
+        console.error('Erro ao obter empresas:', error);
+        res.status(500).send('Erro ao obter empresas!');
     }
 }
 

@@ -1,4 +1,4 @@
-const pool = require("../config/dbConfig")
+const pool = require("../config/dbConfig");
 
 async function createVacancy(req, res) {
     
@@ -17,6 +17,7 @@ async function createVacancy(req, res) {
                 message: 'A data de expiração não pode ser a mesma que a data de criação!'
             });
         }
+
         await pool.query(query, [name, description, creation_time, expiration_time, type]);
         res.status(201).send({
             message: 'Vaga cadastrada com sucesso!',
