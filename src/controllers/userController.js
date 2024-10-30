@@ -9,10 +9,16 @@ const validarCPF = require("../models/validarCPF");
 async function login(req, res) {
     const { email, password } = req.body;
 
+    console.log(email);
+    
+
     try {
         // Verifica se o usuário existe no banco de dados
         const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         const user = userResult.rows[0];
+
+        console.log(user);
+        
 
         if (!user) {
             return res.status(404).send({ message: 'Usuário não encontrado' });
