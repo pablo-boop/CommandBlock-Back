@@ -9,7 +9,7 @@ const validarCPF = require("../models/validarCPF");
 async function login(req, res) {
     const { email, password } = req.body;
 
-    console.log(email);
+    console.log(email, password);
     
 
     try {
@@ -46,7 +46,8 @@ async function login(req, res) {
             // Retornar o novo token
             return res.status(200).json({
                 message: 'Login bem-sucedido',
-                token: newToken
+                token: newToken,
+                id: user.id
             });
         } else {
             // Verifica se o token existente é válido
@@ -67,7 +68,8 @@ async function login(req, res) {
                         // Retornar o novo token
                         return res.status(200).json({
                             message: 'Token renovado',
-                            token: newToken
+                            token: newToken,
+                            id: user.id
                         });
                     } else {
                         // Se o token for inválido
@@ -77,7 +79,8 @@ async function login(req, res) {
                     // Se o token já existir e for válido, retorne o token existente
                     return res.status(200).json({
                         message: 'Login bem-sucedido',
-                        token: user.token
+                        token: user.token,
+                        id: user.id
                     });
                 }
             });
