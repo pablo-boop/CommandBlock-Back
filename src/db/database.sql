@@ -30,7 +30,9 @@ CREATE TABLE vacancies (
     creation_time DATE,
     expiration_time DATE NOT NULL,
     status VARCHAR(100) NOT NULL DEFAULT 'sem candidatos',
-    type VARCHAR(150) NOT NULL
+    company_id INTEGER NOT NULL,
+    type VARCHAR(150) NOT NULL,
+    FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 
 CREATE TABLE candidacies (

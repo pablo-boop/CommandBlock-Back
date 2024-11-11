@@ -3,8 +3,8 @@ const pool = require("../config/dbConfig");
 async function createVacancy(req, res) {
     
     try {
-        const { name, description, creation_time, expiration_time, type } = req.body;
-        const query = `INSERT INTO vacancies (name, description, creation_time, expiration_time, type) VALUES ($1, $2, $3, $4, $5)`;
+        const { name, description, creation_time, expiration_time, type, company_id } = req.body;
+        const query = `INSERT INTO vacancies (name, description, creation_time, expiration_time, type, company_id) VALUES ($1, $2, $3, $4, $5, $6)`;
         
         if (name === "" || description === "" || creation_time == null || expiration_time == null || type === "") {
             return res.status(400).send({
@@ -18,7 +18,7 @@ async function createVacancy(req, res) {
             });
         }
 
-        await pool.query(query, [name, description, creation_time, expiration_time, type]);
+        await pool.query(query, [name, description, creation_time, expiration_time, type, company_id]);
         res.status(201).send({
             message: 'Vaga cadastrada com sucesso!',
         });
