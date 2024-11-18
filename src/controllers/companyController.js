@@ -11,7 +11,12 @@ async function createCompany(req, res) {
         }
         const cnpjFormated = formatarCNPJ(cnpj);
         const phoneFormated = formatarTelefone(phone);
-        const query = `INSERT INTO companies (name, cnpj, email, phone) VALUES ($1, $2, $3, $4)`;
+        
+        // Modified query to return the ID of the inserted company
+        const query = `
+            INSERT INTO companies (name, cnpj, email, phone) 
+            VALUES ($1, $2, $3, $4) 
+            RETURNING id`;
 
         const cnpjAlreadyExist = await pool.query('SELECT * FROM companies WHERE cnpj = $1', [cnpj]);
         const emailAlreadyExist = await pool.query('SELECT * FROM companies WHERE email = $1', [email]);
@@ -21,8 +26,14 @@ async function createCompany(req, res) {
         } else if (cnpjAlreadyExist.rowCount > 0) {
             return res.status(400).send({ message: 'CNPJ já cadastrado!' });
         } else {
-            await pool.query(query, [name, cnpjFormated, email, phoneFormated]);
-            return res.status(201).send({ message: 'Empressa cadastrada com sucesso!' });
+            // Execute the query and get the returned ID
+            const result = await pool.query(query, [name, cnpjFormated, email, phoneFormated]);
+            const newCompanyId = result.rows[0].id;
+            
+            return res.status(201).send({ 
+                message: 'Empressa cadastrada com sucesso!',
+                id: newCompanyId 
+            });
         }
     } catch (error) {
         console.error('Erro ao criar empressa:', error.message);
