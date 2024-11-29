@@ -32,6 +32,7 @@ CREATE TABLE vacancies (
     status VARCHAR(100) NOT NULL DEFAULT 'sem candidatos',
     company_id INTEGER NOT NULL,
     type VARCHAR(150) NOT NULL,
+    managed BOOLEAN DEFAULT false,
     FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 

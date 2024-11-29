@@ -12,7 +12,7 @@ async function createCandidacy(req, res) {
 
         // Verificar o tipo de usuário
         const userTypeCheck = await pool.query(
-            'SELECT type FROM users WHERE id = $1', 
+            'SELECT type FROM users WHERE id = $1',
             [id_student]
         );
 
@@ -25,22 +25,34 @@ async function createCandidacy(req, res) {
             return res.status(403).send({ message: "Apenas alunos podem criar candidaturas!" });
         }
 
-        // Verificar se já existe uma candidatura do aluno para esta vaga
-        const existingCandidacy = await pool.query(
-            'SELECT id FROM candidacies WHERE id_student = $1 AND id_vacancy = $2', 
-            [id_student, id_vacancy]
+        // Nova verificação: Checar se a candidatura já foi gerenciada
+        const managedCandidacyCheck = await pool.query(
+            'SELECT managed FROM vacancies WHERE id = $1',
+            [id_vacancy]
         );
 
-        if (existingCandidacy.rows.length > 0) {
-            return res.status(400).send({ message: "Você já tem uma candidatura para esta vaga!" });
-        }
-
-        // Criar a candidatura
-        const query = `INSERT INTO candidacies (id_student, id_vacancy, id_company, iniciated, curriculumAvaliation, documentsManagement, done, hired, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
-
-        await pool.query(query, [id_student, id_vacancy, id_company, true, false, false, false, false, description]);
+        console.log({resposta: managedCandidacyCheck});
         
-        return res.status(201).send({ message: 'Candidatura feita com sucesso!' });
+        // if (managedCandidacyCheck.managed == true) {
+        //     res.status(400).send({ message: 'Candidatura encerrada' })
+        // }
+
+        // // Verificar se já existe uma candidatura do aluno para esta vaga
+        // const existingCandidacy = await pool.query(
+        //     'SELECT id FROM candidacies WHERE id_student = $1 AND id_vacancy = $2',
+        //     [id_student, id_vacancy]
+        // );
+
+        // if (existingCandidacy.rows.length > 0) {
+        //     return res.status(400).send({ message: "Você já tem uma candidatura para esta vaga!" });
+        // }
+
+        // // Criar a candidatura
+        // const query = `INSERT INTO candidacies (id_student, id_vacancy, id_company, iniciated, curriculumAvaliation, documentsManagement, done, hired, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
+
+        // await pool.query(query, [id_student, id_vacancy, id_company, true, false, false, false, false, description]);
+
+        // return res.status(201).send({ message: 'Candidatura feita com sucesso!' });
 
     } catch (error) {
         console.error('Erro ao realizar candidatura:', error.message);
@@ -152,7 +164,19 @@ async function manageCandidates(req, res) {
             return res.status(404).json({ success: false, message: 'Nenhuma candidatura encontrada.' });
         }
 
-        // Filtrar candidaturas duplicadas
+        // Encontrar a candidatura do estudante selecionado
+        const selectedCandidacy = candidacies.rows.find(
+            (cand) => cand.id_student === selectedStudentId
+        );
+
+        if (!selectedCandidacy) {
+            return res.status(404).json({
+                success: false,
+                message: 'Candidatura do estudante selecionado não encontrada.'
+            });
+        }
+
+        // Filtrar candidaturas duplicadas (excluindo a candidatura do estudante selecionado)
         const duplicates = candidacies.rows.filter(
             (cand) => cand.id_student !== selectedStudentId
         );
@@ -161,12 +185,19 @@ async function manageCandidates(req, res) {
             return res.status(404).json({ success: false, message: 'Nenhuma duplicata encontrada.' });
         }
 
-        // Excluir candidaturas duplicadas
+        // Obter os IDs das candidaturas duplicadas
         const duplicateIds = duplicates.map((dup) => dup.id);
 
-        await client.query(
-            `DELETE FROM candidacies WHERE id = ANY($1::int[])`,
-            [duplicateIds]
+        // Excluir candidaturas duplicadas
+        const deleteResult = await client.query(
+            `DELETE FROM candidacies WHERE id_vacancy = $1 AND id_student != $2 AND id = ANY($3::int[])`,
+            [id_vacancy, selectedStudentId, duplicateIds]
+        );
+
+        // Mudança do BOOLEAN de managed de vacancies
+        await client.query(`
+            UPDATE vacancies SET managed = true WHERE id = $1`,
+            [id_vacancy]
         );
 
         // Commit da transação
@@ -176,11 +207,16 @@ async function manageCandidates(req, res) {
             success: true,
             message: 'Candidatos duplicados removidos com sucesso.',
             deletedIds: duplicateIds,
+            selectedCandidacyId: selectedCandidacy.id,
         });
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Erro ao gerenciar candidaturas:', error);
-        res.status(500).json({ success: false, message: 'Erro interno ao processar.' });
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno ao processar.',
+            errorDetails: error.message
+        });
     } finally {
         client.release();
     }
@@ -222,22 +258,22 @@ async function getDuplicateCandidacies(req, res) {
                 WHERE vd.description = c.description 
                 AND vd.id_company = c.id_company
             ) > 1
-            ORDER BY c.creation_time;`, 
+            ORDER BY c.creation_time;`,
             [id_vacancy]
         );
 
         if (duplicates.rows.length === 0) {
-            return res.status(200).json({ 
-                success: true, 
+            return res.status(200).json({
+                success: true,
                 message: 'Nenhuma duplicata encontrada.',
-                duplicates: [] 
+                duplicates: []
             });
         }
 
         // Agrupar duplicatas por descrição e empresa
         const groupedDuplicates = duplicates.rows.reduce((acc, current) => {
-            const duplicateGroup = acc.find(group => 
-                group.description === current.description && 
+            const duplicateGroup = acc.find(group =>
+                group.description === current.description &&
                 group.id_company === current.id_company
             );
 
@@ -274,10 +310,10 @@ async function getDuplicateCandidacies(req, res) {
         });
     } catch (error) {
         console.error('Erro ao buscar candidaturas duplicadas:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Erro interno ao buscar duplicatas.',
-            error: error.message 
+            error: error.message
         });
     }
 }
