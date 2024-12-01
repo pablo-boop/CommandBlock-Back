@@ -14,6 +14,9 @@ router.post('/candidacies/:id_student/:id_vacancy/:id_company', candidacyControl
 // Editar uma candidatura existente
 router.put('/candidacies/:id/:id_student/:id_vacancy/:id_company', candidacyController.editCandidacy);
 
+// Update candidacy status
+router.patch('/candidacies/update-status/:id', candidacyController.updateCandidacyStatus);
+
 // Deletar uma candidatura
 router.delete('/candidacies/:id', candidacyController.deleteCandidacy);
 

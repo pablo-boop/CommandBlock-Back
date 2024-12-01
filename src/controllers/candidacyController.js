@@ -362,6 +362,58 @@ async function getManagedCandidacy(req, res) {
     }
 }
 
+async function updateCandidacyStatus(req, res) {
+    const { id } = req.params;
+    const { field } = req.body;
+
+    // List of valid fields that can be updated
+    const validFields = [
+        'iniciated', 
+        'curriculumAvaliation', 
+        'documentsManagement', 
+        'done', 
+        'hired'
+    ];
+
+    if (!validFields.includes(field)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Campo inválido para atualização.'
+        });
+    }
+
+    try {
+        const query = `
+            UPDATE candidacies 
+            SET ${field} = true, 
+                modification_data = $1 
+            WHERE id = $2
+        `;
+        
+        const data = new Date();
+        const result = await pool.query(query, [data, id]);
+
+        if (result.rowCount > 0) {
+            res.status(200).json({
+                success: true,
+                message: `Status de ${field} atualizado com sucesso.`
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Candidatura não encontrada.'
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar status da candidatura:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno ao atualizar status.',
+            errorDetails: error.message
+        });
+    }
+}
+
 module.exports = {
     createCandidacy,
     getAllCandidacies,
@@ -370,5 +422,6 @@ module.exports = {
     deleteCandidacy,
     manageCandidates,
     getDuplicateCandidacies,
-    getManagedCandidacy
+    getManagedCandidacy,
+    updateCandidacyStatus
 };
