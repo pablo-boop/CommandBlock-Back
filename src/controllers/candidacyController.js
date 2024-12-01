@@ -25,34 +25,32 @@ async function createCandidacy(req, res) {
             return res.status(403).send({ message: "Apenas alunos podem criar candidaturas!" });
         }
 
-        // Nova verificação: Checar se a candidatura já foi gerenciada
+        // Verificar se a vaga já foi gerenciada (managed = true)
         const managedCandidacyCheck = await pool.query(
             'SELECT managed FROM vacancies WHERE id = $1',
             [id_vacancy]
         );
 
-        console.log({resposta: managedCandidacyCheck});
-        
-        // if (managedCandidacyCheck.managed == true) {
-        //     res.status(400).send({ message: 'Candidatura encerrada' })
-        // }
+        if (managedCandidacyCheck.rows[0].managed === true) {
+            return res.status(400).send({ message: 'Esta vaga já foi gerenciada e não aceita mais candidaturas.' });
+        }
 
-        // // Verificar se já existe uma candidatura do aluno para esta vaga
-        // const existingCandidacy = await pool.query(
-        //     'SELECT id FROM candidacies WHERE id_student = $1 AND id_vacancy = $2',
-        //     [id_student, id_vacancy]
-        // );
+        // Verificar se já existe uma candidatura do aluno para esta vaga
+        const existingCandidacy = await pool.query(
+            'SELECT id FROM candidacies WHERE id_student = $1 AND id_vacancy = $2',
+            [id_student, id_vacancy]
+        );
 
-        // if (existingCandidacy.rows.length > 0) {
-        //     return res.status(400).send({ message: "Você já tem uma candidatura para esta vaga!" });
-        // }
+        if (existingCandidacy.rows.length > 0) {
+            return res.status(400).send({ message: "Você já tem uma candidatura para esta vaga!" });
+        }
 
-        // // Criar a candidatura
-        // const query = `INSERT INTO candidacies (id_student, id_vacancy, id_company, iniciated, curriculumAvaliation, documentsManagement, done, hired, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
+        // Criar a candidatura
+        const query = `INSERT INTO candidacies (id_student, id_vacancy, id_company, iniciated, curriculumAvaliation, documentsManagement, done, hired, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
 
-        // await pool.query(query, [id_student, id_vacancy, id_company, true, false, false, false, false, description]);
+        await pool.query(query, [id_student, id_vacancy, id_company, true, false, false, false, false, description]);
 
-        // return res.status(201).send({ message: 'Candidatura feita com sucesso!' });
+        return res.status(201).send({ message: 'Candidatura feita com sucesso!' });
 
     } catch (error) {
         console.error('Erro ao realizar candidatura:', error.message);
@@ -318,6 +316,52 @@ async function getDuplicateCandidacies(req, res) {
     }
 }
 
+async function getManagedCandidacy(req, res) {
+    try {
+        const { id_vacancy } = req.params;
+        
+        // Verificar se a vaga está marcada como managed
+        const vacancyCheck = await pool.query(
+            'SELECT managed FROM vacancies WHERE id = $1', 
+            [id_vacancy]
+        );
+
+        if (vacancyCheck.rows.length === 0) {
+            return res.status(404).send({
+                message: 'Vaga não encontrada!'
+            });
+        }
+
+        // Se a vaga não estiver managed, retornar mensagem
+        if (vacancyCheck.rows[0].managed !== true) {
+            return res.status(400).send({
+                message: 'Esta vaga ainda não foi gerenciada.'
+            });
+        }
+
+        // Buscar as candidaturas da vaga gerenciada
+        const candidacies = await pool.query(
+            'SELECT * FROM candidacies WHERE id_vacancy = $1', 
+            [id_vacancy]
+        );
+
+        if (candidacies.rows.length === 0) {
+            return res.status(404).send({
+                message: 'Nenhuma candidatura encontrada para esta vaga gerenciada.'
+            });
+        }
+
+        res.status(200).send({
+            message: `Candidaturas da vaga ${id_vacancy} encontradas com sucesso!`,
+            candidacies: candidacies.rows
+        });
+
+    } catch (error) {
+        console.error('Erro ao obter candidaturas:', error);
+        res.status(500).send('Erro interno ao obter candidaturas!');
+    }
+}
+
 module.exports = {
     createCandidacy,
     getAllCandidacies,
@@ -325,5 +369,6 @@ module.exports = {
     editCandidacy,
     deleteCandidacy,
     manageCandidates,
-    getDuplicateCandidacies
+    getDuplicateCandidacies,
+    getManagedCandidacy
 };

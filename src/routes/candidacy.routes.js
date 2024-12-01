@@ -17,10 +17,13 @@ router.put('/candidacies/:id/:id_student/:id_vacancy/:id_company', candidacyCont
 // Deletar uma candidatura
 router.delete('/candidacies/:id', candidacyController.deleteCandidacy);
 
-// Gerenciar candidatos duplicados para uma vaga específica
-// Como o método POST já é usado para criar candidaturas, evite confusão e use um nome de rota exclusivo para esta ação
-router.get('/manage-candidates/:id_vacancy', candidacyController.getDuplicateCandidacies);
+// Obter candidaturas de uma vaga gerenciada
+router.get('/manage-candidates/:id_vacancy', candidacyController.getManagedCandidacy);
 
+// Buscar candidaturas duplicadas
+router.get('/duplicate-candidates/:id_vacancy', candidacyController.getDuplicateCandidacies);
+
+// Gerenciar candidatos
 router.post('/manage-candidates/:id_vacancy', candidacyController.manageCandidates);
 
 module.exports = router;
