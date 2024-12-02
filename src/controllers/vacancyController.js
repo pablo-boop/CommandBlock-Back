@@ -31,24 +31,29 @@ async function createVacancy(req, res) {
 }
 
 async function getAllVacancies(req, res) {
-    try {
-        const { status } = req.params;
-        let result;
+    const name = req.query.name;
 
-        if (status) {
-            result = await pool.query('SELECT * FROM vacancies WHERE status = $1', [status]);
-        } else {
+    try {
+        let result;
+        if (!name) {
+            // If no name is provided, fetch all vacancies
             result = await pool.query('SELECT * FROM vacancies');
+        } else {
+            // Use ILIKE for case-insensitive partial matching
+            result = await pool.query('SELECT * FROM vacancies WHERE name ILIKE $1', [`%${name}%`]);
         }
 
-        res.status(200).send({
+        res.status(200).json({
             message: 'Vagas obtidas com sucesso!',
             totalVacancies: result.rowCount,
             vacancies: result.rows
         });
     } catch (error) {
         console.error('Erro ao obter vagas:', error);
-        res.status(500).send('Erro ao obter vagas!');
+        res.status(500).json({ 
+            message: 'Erro ao obter vagas!',
+            error: error.message 
+        });
     }
 }
 
