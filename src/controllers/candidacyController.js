@@ -224,93 +224,69 @@ async function getDuplicateCandidacies(req, res) {
     const { id_vacancy } = req.params;
 
     try {
-        const duplicates = await pool.query(
-            `WITH vacancy_duplicates AS (
-                SELECT id, id_student, id_vacancy, id_company, description, creation_time
-                FROM candidacies
-                WHERE id_vacancy = $1
-                GROUP BY id, id_student, id_vacancy, id_company, description, creation_time
-            )
+        const duplicates = await pool.query(`
             SELECT 
-                c.id AS candidacy_id,
+                c.id,
                 c.id_student,
-                u.name AS student_name,
                 c.id_vacancy,
-                v.name AS vacancy_name,
-                c.id_company,
+                c.iniciated,
+                c.curriculumAvaliation,
+                c.documentsManagement,
+                c.done,
+                c.hired,
                 c.description,
-                c.creation_time,
-                (
-                    SELECT COUNT(*) 
-                    FROM vacancy_duplicates vd 
-                    WHERE vd.description = c.description 
-                    AND vd.id_company = c.id_company
-                ) AS duplicate_count
+                u.name AS student_name,
+                u.email AS student_email,
+                u.course AS student_course,
+                v.name AS vacancy_name,
+                v.description AS vacancy_description,
+                v.type AS vacancy_type,
+                v.expiration_time AS vacancy_expiration,
+                co.name AS company_name
             FROM candidacies c
             JOIN users u ON c.id_student = u.id
             JOIN vacancies v ON c.id_vacancy = v.id
+            JOIN companies co ON c.id_company = co.id
             WHERE c.id_vacancy = $1
-            AND (
-                SELECT COUNT(*) 
-                FROM vacancy_duplicates vd 
-                WHERE vd.description = c.description 
-                AND vd.id_company = c.id_company
-            ) > 1
-            ORDER BY c.creation_time;`,
-            [id_vacancy]
-        );
-
-        if (duplicates.rows.length === 0) {
-            return res.status(200).json({
-                success: true,
-                message: 'Nenhuma duplicata encontrada.',
-                duplicates: []
-            });
-        }
-
-        // Agrupar duplicatas por descrição e empresa
-        const groupedDuplicates = duplicates.rows.reduce((acc, current) => {
-            const duplicateGroup = acc.find(group =>
-                group.description === current.description &&
-                group.id_company === current.id_company
-            );
-
-            if (duplicateGroup) {
-                duplicateGroup.candidacies.push({
-                    candidacy_id: current.candidacy_id,
-                    student_id: current.id_student,
-                    student_name: current.student_name,
-                    creation_time: current.creation_time
-                });
-            } else {
-                acc.push({
-                    description: current.description,
-                    id_company: current.id_company,
-                    vacancy_id: current.id_vacancy,
-                    vacancy_name: current.vacancy_name,
-                    duplicate_count: current.duplicate_count,
-                    candidacies: [{
-                        candidacy_id: current.candidacy_id,
-                        student_id: current.id_student,
-                        student_name: current.student_name,
-                        creation_time: current.creation_time
-                    }]
-                });
-            }
-
-            return acc;
-        }, []);
+            ORDER BY c.creation_time
+        `, [id_vacancy]);
 
         res.status(200).json({
             success: true,
-            message: 'Candidaturas duplicadas encontradas.',
-            duplicates: groupedDuplicates
+            message: 'Candidaturas encontradas.',
+            total: duplicates.rowCount,
+            candidacies: duplicates.rows.map(dup => ({
+                id: dup.id,
+                student: {
+                    id: dup.id_student,
+                    name: dup.student_name,
+                    email: dup.student_email,
+                    course: dup.student_course
+                },
+                vacancy: {
+                    id: dup.id_vacancy,
+                    name: dup.vacancy_name,
+                    description: dup.vacancy_description,
+                    type: dup.vacancy_type,
+                    expiration_time: dup.vacancy_expiration,
+                    company_name: dup.company_name
+                },
+                status: {
+                    iniciated: dup.iniciated,
+                    curriculumAvaliation: dup.curriculumAvaliation,
+                    documentsManagement: dup.documentsManagement,
+                    done: dup.done,
+                    hired: dup.hired
+                },
+                description: dup.description
+            }))
         });
+
     } catch (error) {
-        console.error('Erro ao buscar candidaturas duplicadas:', error);
+        console.error('Erro ao buscar candidaturas:', error);
         res.status(500).json({
             success: false,
-            message: 'Erro interno ao buscar duplicatas.',
+            message: 'Erro interno ao buscar candidaturas.',
             error: error.message
         });
     }
@@ -319,10 +295,10 @@ async function getDuplicateCandidacies(req, res) {
 async function getManagedCandidacy(req, res) {
     try {
         const { id_vacancy } = req.params;
-        
+
         // Verificar se a vaga está marcada como managed
         const vacancyCheck = await pool.query(
-            'SELECT managed FROM vacancies WHERE id = $1', 
+            'SELECT managed FROM vacancies WHERE id = $1',
             [id_vacancy]
         );
 
@@ -341,7 +317,7 @@ async function getManagedCandidacy(req, res) {
 
         // Buscar as candidaturas da vaga gerenciada
         const candidacies = await pool.query(
-            'SELECT * FROM candidacies WHERE id_vacancy = $1', 
+            'SELECT * FROM candidacies WHERE id_vacancy = $1',
             [id_vacancy]
         );
 
@@ -368,10 +344,10 @@ async function updateCandidacyStatus(req, res) {
 
     // List of valid fields that can be updated
     const validFields = [
-        'iniciated', 
-        'curriculumAvaliation', 
-        'documentsManagement', 
-        'done', 
+        'iniciated',
+        'curriculumAvaliation',
+        'documentsManagement',
+        'done',
         'hired'
     ];
 
@@ -389,7 +365,7 @@ async function updateCandidacyStatus(req, res) {
                 modification_data = $1 
             WHERE id = $2
         `;
-        
+
         const data = new Date();
         const result = await pool.query(query, [data, id]);
 
