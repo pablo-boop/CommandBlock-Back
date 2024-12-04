@@ -99,7 +99,7 @@ async function editVacancy(req, res) {
             }
         } catch (error) {
             console.error('Erro ao atualizar vaga:', error);
-            return res.status(500).send('Erro ao atualizar vaga!');
+            return res.status(500).send({message: 'Erro ao atualizar vaga!'});
         }
     }
 }
